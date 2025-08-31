@@ -84,7 +84,7 @@ def serve(
         else:
             config = load_config_from_env(validate=True)
         console.print("[blue]Loaded configuration[/blue]")
-        console.print(f"{config.model_dump()}")
+        # console.print(f"{config.model_dump()}")
         # Apply CLI overrides
         if timeout is not None:
             config.timeout_seconds = timeout
