@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import inspect
+
 from typing import Any, Dict, Generic, Optional, TypeVar, get_origin, get_args
 from datetime import datetime
 
@@ -143,8 +145,9 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
 
         Similar to Hookshot's trigger system but async-first.
         """
-        triggered = []
+        triggered: list[str] = []
 
+        """
         for method_name in dir(self):
             method = getattr(self, method_name)
             if hasattr(method, "_webhook_triggers"):
@@ -161,6 +164,29 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
                         triggered.append(f"{self.event_type}.{method_name}")
                     except Exception as e:
                         logger.error(f"Trigger {method_name} failed: {e}")
+        """
+        # Only iterate callable members; this avoids getattr on class-only descriptors.
+        for method_name, method in inspect.getmembers(self, predicate=callable):
+            # skip private/dunder and non-method callables
+            if method_name.startswith("_"):
+                continue
+
+            # only consider functions that were decorated with @on_activity / @on_any
+            if not hasattr(method, "_webhook_triggers"):
+                continue
+
+            activity = self.get_activity()
+            triggers = getattr(method, "_webhook_triggers", set())
+
+            if activity in triggers or "any" in triggers:
+                try:
+                    if asyncio.iscoroutinefunction(method):
+                        await method()
+                    else:
+                        method()
+                    triggered.append(f"{self.event_type}.{method_name}")
+                except Exception as e:
+                    logger.error(f"Trigger {method_name} failed: {e}")
 
         return triggered
 
