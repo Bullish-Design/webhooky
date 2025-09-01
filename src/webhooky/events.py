@@ -140,6 +140,7 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         """Whether this event passed validation."""
         return True  # If we got this far, validation succeeded
 
+    '''
     async def process_triggers(self) -> list[str]:
         """
         Process any trigger methods on this event instance.
@@ -188,6 +189,40 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
                     triggered.append(f"{self.event_type}.{method_name}")
                 except Exception as e:
                     logger.error(f"Trigger {method_name} failed: {e}")
+
+        return triggered
+    '''
+
+    async def process_triggers(self) -> list[str]:
+        """
+        Invoke class-method triggers (decorated with @on_activity / @on_any).
+        We must inspect the *class* to see function-level attributes, then bind.
+        """
+        triggered: list[str] = []
+        activity = self.get_activity()
+
+        # Walk unbound callables on the class so we can see function attributes
+        for name, func in inspect.getmembers(self.__class__, predicate=callable):
+            if name.startswith("_"):
+                continue  # skip dunders/private
+
+            # The decorator attaches to the function object
+            orig_func = getattr(func, "__func__", func)  # unbound function
+            triggers = getattr(orig_func, "_webhook_triggers", None)
+            if not triggers:
+                continue
+
+            if activity in triggers or "any" in triggers:
+                # Re-bind to this instance and call
+                bound = getattr(self, name)
+                try:
+                    if inspect.iscoroutinefunction(orig_func):
+                        await bound()
+                    else:
+                        bound()
+                    triggered.append(f"{self.event_type}.{name}")
+                except Exception as e:
+                    logger.error(f"Trigger {name} failed: {e}")
 
         return triggered
 
