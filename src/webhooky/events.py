@@ -122,9 +122,11 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         # Common activity field names
         for field in ["action", "event", "type", "activity_type", "event_type", "activityType", "eventType"]:
             # for field in ["action", "event", "type", "activity_type", "event_type"]:
-            if field in payload_dict and isinstance(payload_dict[field], str):
-                return payload_dict[field]
-
+            # if field in payload_dict and isinstance(payload_dict[field], str):
+            #    return payload_dict[field]
+            val = payload_dict.get(field)
+            if isinstance(val, str) and val:
+                return val
         # Use class name as fallback
         return self.__class__.__name__.lower()
 
