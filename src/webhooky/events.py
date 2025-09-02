@@ -43,6 +43,7 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         from .registry import event_registry
 
         event_registry.register_event_class(cls)
+        logging.info(f"Registered event class: {cls.__name__}")
 
     @classmethod
     def matches(cls, raw_data: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> bool:
@@ -52,9 +53,12 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         Uses validation-based matching - if validation succeeds, pattern matches.
         """
         try:
+            logging.info(f"[{cls.__name__}] Attempting to match event")
             cls.from_raw(raw_data, headers or {})
+            logging.info(f"[{cls.__name__}] Event matched successfully")
             return True
         except (PydanticValidationError, ValueError, TypeError):
+            logging.error(f"[{cls.__name__}] Event did not match")
             return False
 
     @classmethod
@@ -120,9 +124,7 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
 
         # Common activity field names
         for field in ["action", "event", "type", "activity_type", "event_type", "activityType", "eventType"]:
-            # for field in ["action", "event", "type", "activity_type", "event_type"]:
-            # if field in payload_dict and isinstance(payload_dict[field], str):
-            #    return payload_dict[field]
+
             val = payload_dict.get(field)
             if isinstance(val, str) and val:
                 return val
@@ -141,57 +143,6 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         """Whether this event passed validation."""
         return True  # If we got this far, validation succeeded
 
-    '''
-    async def process_triggers(self) -> list[str]:
-        """
-        Process any trigger methods on this event instance.
-
-        """
-        triggered: list[str] = []
-
-        """
-        for method_name in dir(self):
-            method = getattr(self, method_name)
-            if hasattr(method, "_webhook_triggers"):
-                activity = self.get_activity()
-                triggers = method._webhook_triggers
-
-                # Check if method should trigger for this activity
-                if activity in triggers or "any" in triggers:
-                    try:
-                        if asyncio.iscoroutinefunction(method):
-                            await method()
-                        else:
-                            method()
-                        triggered.append(f"{self.event_type}.{method_name}")
-                    except Exception as e:
-                        logger.error(f"Trigger {method_name} failed: {e}")
-        """
-        # Only iterate callable members; this avoids getattr on class-only descriptors.
-        for method_name, method in inspect.getmembers(self, predicate=callable):
-            # skip private/dunder and non-method callables
-            if method_name.startswith("_"):
-                continue
-
-            # only consider functions that were decorated with @on_activity / @on_any
-            if not hasattr(method, "_webhook_triggers"):
-                continue
-
-            activity = self.get_activity()
-            triggers = getattr(method, "_webhook_triggers", set())
-
-            if activity in triggers or "any" in triggers:
-                try:
-                    if asyncio.iscoroutinefunction(method):
-                        await method()
-                    else:
-                        method()
-                    triggered.append(f"{self.event_type}.{method_name}")
-                except Exception as e:
-                    logger.error(f"Trigger {method_name} failed: {e}")
-
-        return triggered
-    '''
 
     async def process_triggers(self) -> list[str]:
         """
@@ -292,13 +243,4 @@ on_delete = lambda: on_activity("delete", "deleted", "remove", "removed")
 on_push = lambda: on_activity("push", "commit")
 on_pull_request = lambda: on_activity("pull_request", "pr")
 
-'''Deleting - Use the one in exceptions.py instead.
-class EventValidationError(Exception):
-    """Raised when webhook data doesn't match event pattern."""
-
-    def __init__(self, message: str, event_class: Optional[type] = None, raw_data: Optional[Dict] = None):
-        super().__init__(message)
-        self.event_class = event_class
-        self.raw_data = raw_data
-'''
 
