@@ -30,10 +30,9 @@ classifiers = [
 
 [project.optional-dependencies]
 fastapi = ["fastapi>=0.111", "uvicorn>=0.30"]
-smeeme = ["smeeme"]
 rich = ["rich>=13.0"]
 cli = ["typer>=0.12", "rich>=13.0"]
-all = ["webhooky[fastapi,smeeme,rich,cli]"]
+all = ["webhooky[fastapi,rich,cli]"]
 
 dev = [
     "pytest>=8",
@@ -44,7 +43,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-smeeme = { git = "https://github.com/Bullish-Design/smeeme.git" }
+#smeeme = { git = "https://github.com/Bullish-Design/smeeme.git" }
 
 
 

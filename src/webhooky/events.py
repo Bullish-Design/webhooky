@@ -227,8 +227,12 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         return triggered
 
 
+
 class GenericWebhookEvent(WebhookEventBase[AnyPayload]):
-    """Generic webhook event for untyped payloads."""
+    """Generic webhook event for untyped payloads with dict-like access."""
+    
+    # Override the payload field to be more flexible
+    payload: Dict[str, Any] = {}
 
     @classmethod
     def _transform_raw_data(cls, raw_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -236,9 +240,31 @@ class GenericWebhookEvent(WebhookEventBase[AnyPayload]):
         return raw_data or {}
 
     @classmethod
+    def from_raw(
+        cls,
+        raw_data: Dict[str, Any],
+        headers: Optional[Dict[str, str]] = None,
+        source_info: Optional[Dict[str, Any]] = None,
+    ) -> GenericWebhookEvent:
+        """
+        Create generic event from raw webhook data.
+        
+        Bypasses Pydantic validation for the payload to allow any data.
+        """
+        headers = headers or {}
+        source_info = source_info or {}
+        
+        # Create the event with the raw data as payload
+        return cls(payload=raw_data, headers=headers, source_info=source_info, timestamp=datetime.now())
+
+    @classmethod
     def matches(cls, raw_data: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> bool:
         """Generic events match anything."""
         return True
+
+    def get_payload_dict(self) -> Dict[str, Any]:
+        """Get the payload as a dictionary."""
+        return self.payload
 
 
 # Trigger decorators 
