@@ -78,9 +78,15 @@ class WebhookEventBase(BaseModel):
                 return str(self.raw_data[field])
         return self.__class__.__name__.lower()
 
-    async def process_triggers(self) -> List[str]:
-        """Process all decorated trigger methods on this instance."""
+    async def process_triggers(self) -> tuple[List[str], List[str]]:
+        """
+        Process all decorated trigger methods on this instance.
+        
+        Returns:
+            (triggered_methods, errors) - Lists of successful triggers and error messages
+        """
         triggered = []
+        errors = []
         activity = self.get_activity()
         
         for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
@@ -103,9 +109,11 @@ class WebhookEventBase(BaseModel):
                     triggered.append(f"{self.__class__.__name__}.{name}")
                     logger.debug(f"Triggered: {self.__class__.__name__}.{name}")
                 except Exception as e:
-                    logger.error(f"Trigger {name} failed: {e}")
+                    error_msg = f"Trigger {self.__class__.__name__}.{name} failed: {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
                     
-        return triggered
+        return triggered, errors
 
 
 class GenericWebhookEvent(WebhookEventBase):

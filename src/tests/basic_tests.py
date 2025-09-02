@@ -9,8 +9,8 @@ from pydantic import field_validator
 from webhooky import EventBus, WebhookEventBase, on_activity, on_push
 
 
-class TestEvent(WebhookEventBase):
-    """Test event class."""
+class SampleEvent(WebhookEventBase):
+    """Sample event class for testing."""
     
     @field_validator('raw_data')
     @classmethod
@@ -21,15 +21,11 @@ class TestEvent(WebhookEventBase):
     
     @on_activity('test')
     async def handle_test(self):
-        self.test_triggered = True
-    
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.test_triggered = False
+        pass
 
 
-class PushEvent(WebhookEventBase):
-    """Push event class."""
+class SamplePushEvent(WebhookEventBase):
+    """Push event class for testing."""
     
     @classmethod
     def matches(cls, raw_data: Dict[str, Any], headers=None) -> bool:
@@ -37,34 +33,30 @@ class PushEvent(WebhookEventBase):
     
     @on_push()
     async def handle_push(self):
-        self.push_handled = True
-    
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.push_handled = False
+        pass
 
 
 @pytest.mark.asyncio
 async def test_event_registration():
     """Test event class registration."""
     bus = EventBus()
-    bus.register(TestEvent)
+    bus.register(SampleEvent)
     
-    assert 'TestEvent' in bus.get_registered_classes()
+    assert 'SampleEvent' in bus.get_registered_classes()
 
 
 @pytest.mark.asyncio
 async def test_pattern_matching():
     """Test pattern matching with validation."""
     bus = EventBus()
-    bus.register(TestEvent)
+    bus.register(SampleEvent)
     
     # Valid data should match
     valid_data = {'test_field': 'value', 'action': 'test'}
     result = await bus.process_webhook(valid_data)
     
     assert result.success
-    assert 'TestEvent' in result.matched_patterns
+    assert 'SampleEvent' in result.matched_patterns
     assert len(result.triggered_methods) == 1
 
 
@@ -72,27 +64,27 @@ async def test_pattern_matching():
 async def test_custom_matching():
     """Test custom matches() method."""
     bus = EventBus()
-    bus.register(PushEvent)
+    bus.register(SamplePushEvent)
     
     push_data = {'event_type': 'push', 'ref': 'refs/heads/main'}
     result = await bus.process_webhook(push_data)
     
     assert result.success
-    assert 'PushEvent' in result.matched_patterns
+    assert 'SamplePushEvent' in result.matched_patterns
 
 
 @pytest.mark.asyncio
 async def test_trigger_methods():
     """Test trigger method execution."""
     bus = EventBus()
-    bus.register(TestEvent)
+    bus.register(SampleEvent)
     
     data = {'test_field': 'value', 'action': 'test'}
     result = await bus.process_webhook(data)
     
     assert result.success
     assert len(result.triggered_methods) == 1
-    assert 'TestEvent.handle_test' in result.triggered_methods
+    assert 'SampleEvent.handle_test' in result.triggered_methods
 
 
 @pytest.mark.asyncio
@@ -112,7 +104,7 @@ async def test_generic_fallback():
 async def test_no_fallback():
     """Test with fallback disabled."""
     bus = EventBus(fallback_to_generic=False)
-    bus.register(TestEvent)
+    bus.register(SampleEvent)
     
     # Invalid data
     invalid_data = {'not_test_field': 'value'}
@@ -126,18 +118,18 @@ async def test_no_fallback():
 async def test_multiple_registrations():
     """Test registering multiple event classes."""
     bus = EventBus()
-    bus.register_all(TestEvent, PushEvent)
+    bus.register_all(SampleEvent, SamplePushEvent)
     
     classes = bus.get_registered_classes()
-    assert 'TestEvent' in classes
-    assert 'PushEvent' in classes
+    assert 'SampleEvent' in classes
+    assert 'SamplePushEvent' in classes
 
 
 @pytest.mark.asyncio
 async def test_statistics():
     """Test bus statistics tracking."""
     bus = EventBus()
-    bus.register(TestEvent)
+    bus.register(SampleEvent)
     
     data = {'test_field': 'value', 'action': 'test'}
     await bus.process_webhook(data)

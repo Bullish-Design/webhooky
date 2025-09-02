@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-import json
 from datetime import datetime
 from typing import Any, Dict, List, Type
 
@@ -97,12 +96,14 @@ class EventBus:
             # Process triggers for each matched event
             for event in matched_events:
                 try:
-                    triggered = await asyncio.wait_for(
+                    triggered, trigger_errors = await asyncio.wait_for(
                         event.process_triggers(),
                         timeout=self.timeout_seconds
                     )
                     result.triggered_methods.extend(triggered)
+                    result.errors.extend(trigger_errors)
                     self._stats['total_triggers'] += len(triggered)
+                    self._stats['total_errors'] += len(trigger_errors)
                 except asyncio.TimeoutError:
                     error = f"Timeout processing {event.__class__.__name__} after {self.timeout_seconds}s"
                     result.errors.append(error)
@@ -122,7 +123,6 @@ class EventBus:
                     f"{len(result.triggered_methods)} triggers, "
                     f"{result.processing_time:.3f}s"
                 )
-                logger.info(f"    {json.dumps(result.model_dump(mode="json"), indent=2)}")
             else:
                 logger.debug("No patterns matched webhook data")
                 
