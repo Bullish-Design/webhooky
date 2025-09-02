@@ -89,6 +89,7 @@ class WebhookEventBase(BaseModel):
         errors = []
         activity = self.get_activity()
         
+        """
         for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
             if name.startswith('_'):
                 continue
@@ -115,8 +116,34 @@ class WebhookEventBase(BaseModel):
                     error_msg = f"Trigger {self.__class__.__name__}.{name} failed: {e}"
                     logger.error(error_msg)
                     errors.append(error_msg)
+        """
+                    
+        # Enumerate *class* functions to avoid getattr()-ing every instance attribute,
+        # which triggers Pydantic's deprecation warnings on instance-side fields.
+        for name, func in inspect.getmembers(self.__class__, predicate=inspect.isfunction):
+            if name.startswith('_'):
+                continue
+            triggers = getattr(func, '_webhook_triggers', None)
+            if not triggers:
+                continue
+            if 'any' in triggers or activity in triggers:
+                bound = getattr(self, name)  # bind the function to this instance
+                try:
+                    if asyncio.iscoroutinefunction(func):
+                        await bound()
+                    else:
+                        bound()
+                    triggered.append(f"{self.__class__.__name__}.{name}")
+                    logger.debug(f"Triggered: {self.__class__.__name__}.{name}")
+                except Exception as e:
+                    error_msg = f"Trigger {self.__class__.__name__}.{name} failed: {e}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
                     
         return triggered, errors
+    
+    
+        
 
 
 class GenericWebhookEvent(WebhookEventBase):
