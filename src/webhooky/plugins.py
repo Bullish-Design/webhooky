@@ -389,6 +389,33 @@ class PluginManager:
         
         return False
 
+# plugins.py
+def load_directory_plugins(self, plugin_dir: Path) -> Dict[str, bool]:
+    results = {}
+    if not plugin_dir.exists() or not plugin_dir.is_dir():
+        return results
+
+    # Ensure a package named "plugins" exists and points at plugin_dir
+    import types, sys, importlib.util
+    pkg_name = "plugins"
+    if pkg_name not in sys.modules:
+        pkg = types.ModuleType(pkg_name)
+        pkg.__path__ = [str(plugin_dir)]
+        sys.modules[pkg_name] = pkg
+
+    for plugin_file in plugin_dir.glob("*.py"):
+        if plugin_file.stem.startswith("_"):
+            continue
+        modname = f"{pkg_name}.{plugin_file.stem}"
+        spec = importlib.util.spec_from_file_location(modname, plugin_file)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[modname] = module
+            spec.loader.exec_module(module)
+            results[plugin_file.stem] = self._initialize_plugin(plugin_file.stem, module)
+        else:
+            results[plugin_file.stem] = False
+    return results
 
 # Global plugin manager instance
 plugin_manager = PluginManager()

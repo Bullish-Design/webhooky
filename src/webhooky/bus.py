@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, ConfigDict, PrivateAttr
 
 from .events import WebhookEventBase, GenericWebhookEvent
 from .models import EventBusMetrics, ProcessingResult
+from .exceptions import HandlerTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -243,21 +244,19 @@ class EventBus(BaseModel):
                     if asyncio.iscoroutinefunction(handler):
                         await asyncio.wait_for(handler(event), timeout=self.timeout_seconds)
                     else:
-                        # Run sync handler in thread pool <- Old, replaced with below "to_thread" version
-                        #loop = asyncio.get_event_loop()
-                        #await asyncio.wait_for(
-                        #    loop.run_in_executor(None, handler, event),
-                        #    timeout=self.timeout_seconds
-                        #)
+                        # Run sync handler in thread pool 
                         await asyncio.wait_for(asyncio.to_thread(handler, event), timeout=self.timeout_seconds)
-                    
+                    name = getattr(handler, '__name__', str(handler))
                     processing_time = time.time() - start_time
                     return {
-                        'handler': getattr(handler, '__name__', str(handler)),
+                        'handler': name,
                         'success': True,
                         'processing_time': processing_time
                     }
                 except Exception as e:
+                    name = getattr(handler, '__name__', str(handler))
+                    if isinstance(e, asyncio.TimeoutError):
+                        e = HandlerTimeoutError(f"Timeout after {self.timeout_seconds}s in {name}", name, self.timeout_seconds)
                     error_msg = f"Handler {getattr(handler, '__name__', handler)} failed: {e}"
                     self._log('error', error_msg)
                     if not self.swallow_exceptions:
