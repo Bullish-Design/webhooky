@@ -223,11 +223,14 @@ class PluginManager:
                 
             attr = getattr(plugin_module, attr_name)
             
-            # Look for functions with handler markers
-            if (callable(attr) and 
-                (hasattr(attr, '_webhook_handler') or 
-                 attr_name.startswith('handle_') or
-                 attr_name.endswith('_handler'))):
+            # Look for functions with handler markers (removed for explicitness)
+            #if (callable(attr) and 
+            #    (hasattr(attr, '_webhook_handler') or 
+            #     attr_name.startswith('handle_') or
+            #     attr_name.endswith('_handler'))):
+            #    handlers.append(attr)
+
+            if callable(attr) and hasattr(attr, '_webhook_handler'): # [cite: 269]
                 handlers.append(attr)
 
         return handlers
@@ -236,20 +239,29 @@ class PluginManager:
         """Register all loaded plugin handlers with an event bus."""
         for plugin_name, handlers in self._handlers.items():
             for handler in handlers:
+                handler_name = getattr(handler, '__name__', 'unknown_handler')
                 # Check for handler metadata
                 if hasattr(handler, '_webhook_pattern'):
                     # Pattern-based handler
                     pattern_class = handler._webhook_pattern
-                    bus.register_handler(pattern_class, handler)
+                    bus.register_handler(pattern_class, handler) # [cite: 271]
+                    logger.debug(f"Registered pattern handler '{handler_name}' from plugin '{plugin_name}'")
                 elif hasattr(handler, '_webhook_activity'):
                     # Activity-based handler
                     activity = handler._webhook_activity
-                    bus.register_activity_handler(activity, handler)
+                    bus.register_activity_handler(activity, handler) # [cite: 272]
+                    logger.debug(f"Registered activity handler '{handler_name}' from plugin '{plugin_name}'")
                 else:
-                    # Generic handler - register as catch-all
+                    # Generic handler - register as catch-all with a warning
+                    logger.warning(
+                        f"Handler '{handler_name}' from plugin '{plugin_name}' was decorated but "
+                        f"specified no pattern or activity. Registering as a catch-all ('on_any'). "
+                        f"This will run for EVERY event. To be more specific, use "
+                        f"@webhook_handler(pattern=YourEvent) or @webhook_handler(activity='your_activity')."
+                    )
                     bus.on_any()(handler)
                     
-                logger.debug(f"Registered handler {handler.__name__} from plugin {plugin_name}")
+                logger.debug(f"Registered handler {handler_name} from plugin {plugin_name}")
 
     async def async_init_plugins(self) -> None:
         """Initialize plugins that require async setup."""

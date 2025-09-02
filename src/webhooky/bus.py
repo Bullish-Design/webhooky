@@ -228,12 +228,13 @@ class EventBus(BaseModel):
                     if asyncio.iscoroutinefunction(handler):
                         await asyncio.wait_for(handler(event), timeout=self.timeout_seconds)
                     else:
-                        # Run sync handler in thread pool
-                        loop = asyncio.get_event_loop()
-                        await asyncio.wait_for(
-                            loop.run_in_executor(None, handler, event),
-                            timeout=self.timeout_seconds
-                        )
+                        # Run sync handler in thread pool <- Old, replaced with below "to_thread" version
+                        #loop = asyncio.get_event_loop()
+                        #await asyncio.wait_for(
+                        #    loop.run_in_executor(None, handler, event),
+                        #    timeout=self.timeout_seconds
+                        #)
+                        await asyncio.wait_for(asyncio.to_thread(handler, event), timeout=self.timeout_seconds)
                     
                     processing_time = time.time() - start_time
                     return {

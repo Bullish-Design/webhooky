@@ -123,7 +123,7 @@ class WebHookyFastAPI:
                     form_data = await request.form()
                     raw_data = dict(form_data)
 
-                # print(f"\n\nReceived webhook: {raw_data}\n\n")
+                print(f"\n\nReceived webhook: {raw_data}\n\n")
 
                 # Add source info
                 source_info = {
@@ -135,6 +135,7 @@ class WebHookyFastAPI:
 
                 # Process through bus
                 result = await self.bus.dispatch_raw(raw_data, headers, source_info)
+                print(f"\n\n   Processed bus result: \n{result}\n\n")
 
                 # Return processing result
                 return JSONResponse(

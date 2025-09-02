@@ -171,6 +171,7 @@ def test(
             discovered = plugin_manager.discover_plugins()
             for plugin_name in discovered:
                 plugin_manager.load_plugin(plugin_name)
+                console.print(f"[green]✓ Loaded plugin {plugin_name}[/green]")
             plugin_manager.register_with_bus(bus)
 
         # Process event
