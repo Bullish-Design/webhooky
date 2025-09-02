@@ -221,7 +221,7 @@ class PluginManager:
             if attr_name.startswith('_'):
                 continue
                 
-            attr = getattr(plugin_module, attr_name)
+            obj = getattr(plugin_module, attr_name)
             
             # Look for functions with handler markers (removed for explicitness)
             #if (callable(attr) and 
@@ -230,8 +230,12 @@ class PluginManager:
             #     attr_name.endswith('_handler'))):
             #    handlers.append(attr)
 
-            if callable(attr) and hasattr(attr, '_webhook_handler'): # [cite: 269]
-                handlers.append(attr)
+            if callable(obj) and (
+                hasattr(obj, "_webhook_handler") or
+                hasattr(obj, "_webhook_pattern") or
+                hasattr(obj, "_webhook_activity")
+            ):
+                handlers.append(obj)
 
         return handlers
 
@@ -391,16 +395,15 @@ plugin_manager = PluginManager()
 
 
 # Decorators for plugin developers
-def webhook_handler(pattern_or_activity=None, activity=None):
+def webhook_handler(pattern: Optional[Type[WebhookEventBase]] = None, activity: Optional[str] = None):
     """Decorator to mark functions as webhook handlers."""
     def decorator(func):
-        if pattern_or_activity and isinstance(pattern_or_activity, type):
-            func._webhook_pattern = pattern_or_activity
-        elif pattern_or_activity and isinstance(pattern_or_activity, str):
-            func._webhook_activity = pattern_or_activity
+        if pattern:
+            func._webhook_pattern = pattern
         elif activity:
             func._webhook_activity = activity
         else:
+            # For catch-all handlers like @webhook_handler()
             func._webhook_handler = True
         return func
     return decorator

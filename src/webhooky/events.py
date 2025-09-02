@@ -84,7 +84,7 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         payload_type = cls._get_payload_type()
 
         # Create typed payload
-        if payload_type and payload_type != PayloadT:
+        if payload_type: # and payload_type != PayloadT:
             payload = payload_type.model_validate(payload_data)
         else:
             # Fallback for base class usage
@@ -104,12 +104,35 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
 
     @classmethod
     def _get_payload_type(cls) -> Optional[type]:
-        """Extract PayloadT type from Generic parameters."""
-        for base in cls.__orig_bases__:  # type: ignore
+        # 1) Prefer the field annotation (robust even if generics are erased)
+        try:
+            t = cls.model_fields['payload'].annotation
+            # unwrap Annotated[...] if present
+            if get_origin(t) is not None:
+                args = [a for a in get_args(t) if isinstance(a, type)]
+                if args:
+                    t = args[0]
+            if isinstance(t, type) and issubclass(t, BaseModel):
+                return t
+        except Exception as e:
+            logger.error(f"Error getting payload type from model_fields: {e}")
+            pass
+
+        try:
+            from typing import get_type_hints
+            hint = get_type_hints(cls).get("payload")
+            if inspect.isclass(hint) and issubclass(hint, BaseModel):
+                return hint
+        except Exception as e:
+            logger.error(f"Error getting payload type from get_type_hints: {e}")
+            pass
+
+        # 2) Fallback to generics
+        for base in getattr(cls, "__orig_bases__", ()):
             origin = get_origin(base)
             if origin is WebhookEventBase:
                 args = get_args(base)
-                if args:
+                if args and inspect.isclass(args[0]) and issubclass(args[0], BaseModel):
                     return args[0]
         return None
 

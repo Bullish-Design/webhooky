@@ -181,8 +181,16 @@ class EventBus(BaseModel):
         
         # Import here to avoid circular dependency
         from .registry import event_registry
-        event_class_list = event_registry.get_event_classes()
+        # Import the GenericWebhookEvent to exclude it from the search
+        from .events import GenericWebhookEvent 
+
+        #event_class_list = event_registry.get_event_classes()
+        event_class_list = [
+            cls for cls in event_registry.get_event_classes() 
+            if cls is not GenericWebhookEvent
+        ]
         len_class_list = len(event_class_list)
+
         count = 0
         for event_class in event_class_list:
 

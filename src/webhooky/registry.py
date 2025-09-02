@@ -24,6 +24,22 @@ class EventRegistry:
         self._class_hierarchy: Dict[str, List[str]] = {}
         self._validation_stats: Dict[str, Dict[str, int]] = {}
         self._active_instances: WeakSet = WeakSet()
+        self._reregister_loaded_classes()  # <-- new
+
+    def _reregister_loaded_classes(self) -> None:
+        try:
+            from .events import WebhookEventBase
+            seen = set()
+            def walk(cls):
+                for sub in cls.__subclasses__():
+                    if sub not in seen and sub is not WebhookEventBase:
+                        seen.add(sub)
+                        self.register_event_class(sub)
+                        walk(sub)
+            walk(WebhookEventBase)
+        except Exception as e:
+            logger.warning(f"Failed to reregister loaded event classes: {e}")
+            pass
 
     def register_event_class(self, event_class: Type) -> None:
         """Register an event class for pattern matching."""
