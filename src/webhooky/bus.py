@@ -181,14 +181,21 @@ class EventBus(BaseModel):
         
         # Import here to avoid circular dependency
         from .registry import event_registry
-        
-        for event_class in event_registry.get_event_classes():
+        event_class_list = event_registry.get_event_classes()
+        len_class_list = len(event_class_list)
+        count = 0
+        for event_class in event_class_list:
+
             try:
+                count += 1
+                logging.info(f"[{count}/{len_class_list}] Trying to match {event_class.__name__}")
                 if event_class.matches(raw_data, headers):
                     event = event_class.from_raw(raw_data, headers, source_info)
                     matched.append(event)
+                    logging.info(f"    > Pattern matched: {event_class.__name__}")
                     self._log('debug', f"Pattern matched: {event_class.__name__}")
             except Exception as e:
+                logging.info(f"    > Pattern match failed for {event_class.__name__}: {e}")
                 self._log('debug', f"Pattern match failed for {event_class.__name__}: {e}")
 
         return matched
