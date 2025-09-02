@@ -24,7 +24,6 @@ class PluginManager:
     Plugin manager for WebHooky extensions.
     
     Supports both entry point discovery and direct module loading.
-    Combines features from both Hooky and Hookshot plugin systems.
     """
 
     def __init__(self):

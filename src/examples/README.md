@@ -1,6 +1,6 @@
 # WebHooky
 
-Validation-based webhook event processing with explicit bus architecture. Combines the best of both worlds: Hooky's explicit bus + strong typing with Hookshot's validation-based pattern matching.
+Validation-based webhook event processing with explicit bus architecture. Basically - Its webhooks with built in pydantic validation-based pattern matching.
 
 ## Features
 

@@ -1,9 +1,9 @@
 """
 WebHooky - Validation-based webhook event processing with explicit bus architecture.
 
-Combines the best of both worlds:
-- Hooky's explicit bus + strong typing
-- Hookshot's validation-based pattern matching
+Combines:
+- Explicit bus + strong typing
+- Validation-based pattern matching
 - Enhanced observability and plugin system
 """
 

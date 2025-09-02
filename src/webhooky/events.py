@@ -26,7 +26,6 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
     """
     Generic webhook event with validation-based pattern matching.
 
-    Combines Hooky's strong typing with Hookshot's validation-as-matching approach.
     Subclass with your PayloadT to get typed events with automatic pattern matching.
     """
 
@@ -147,7 +146,6 @@ class WebhookEventBase(BaseModel, Generic[PayloadT]):
         """
         Process any trigger methods on this event instance.
 
-        Similar to Hookshot's trigger system but async-first.
         """
         triggered: list[str] = []
 
@@ -243,7 +241,7 @@ class GenericWebhookEvent(WebhookEventBase[AnyPayload]):
         return True
 
 
-# Trigger decorators (similar to Hookshot's @on system)
+# Trigger decorators 
 def on_activity(*activities: str):
     """Decorator to mark method as webhook trigger for specific activities."""
 

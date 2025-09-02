@@ -16,7 +16,7 @@ class EventRegistry:
     """
     Registry for webhook event classes with pattern matching and validation tracking.
     
-    Combines Hookshot's auto-registration with enhanced introspection and metrics.
+    Combines auto-registration with enhanced introspection and metrics.
     """
 
     def __init__(self):

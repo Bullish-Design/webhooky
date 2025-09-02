@@ -69,7 +69,7 @@ class EventBus(BaseModel):
             return handler
         return decorator
 
-    # Activity-based handler registration (from Hooky)
+    # Activity-based handler registration 
     def on_activity(self, *activities: str):
         """Register handler for specific activities."""
         def decorator(handler: EventHandler):
