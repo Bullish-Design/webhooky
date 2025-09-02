@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +24,14 @@ class WebhookEventBase(BaseModel):
     """
     
     raw_data: Dict[str, Any]
-    headers: Dict[str, str] = {}
-    source_info: Dict[str, Any] = {}
-    timestamp: datetime = None
+    headers: Dict[str, str] = Field(default_factory=dict)
+    source_info: Dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=datetime.now)
     
-    def __init__(self, **data):
-        if data.get('timestamp') is None:
-            data['timestamp'] = datetime.now()
-        super().__init__(**data)
+    #def __init__(self, **data):
+    #    if data.get('timestamp') is None:
+    #        data['timestamp'] = datetime.now()
+    #    super().__init__(**data)
 
     @classmethod
     def matches(cls, raw_data: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> bool:
@@ -91,6 +91,9 @@ class WebhookEventBase(BaseModel):
         
         for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
             if name.startswith('_'):
+                continue
+
+            if name in ['model_fields']:
                 continue
                 
             # Check for trigger decorations

@@ -117,6 +117,8 @@ class EventBus:
             
             result.success = len(result.errors) == 0
             
+            result.processing_time = time.time() - start_time
+
             if matched_events:
                 logger.info(
                     f"Processed webhook: {len(matched_events)} matches, "
@@ -133,7 +135,7 @@ class EventBus:
             self._stats['total_errors'] += 1
             logger.error(error_msg)
         
-        result.processing_time = time.time() - start_time
+        
         return result
     
     async def _find_matches(
