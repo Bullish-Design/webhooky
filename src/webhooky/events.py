@@ -123,9 +123,12 @@ class WebhookEventBase(BaseModel):
         for name, func in inspect.getmembers(self.__class__, predicate=inspect.isfunction):
             if name.startswith('_'):
                 continue
+
             triggers = getattr(func, '_webhook_triggers', None)
+            
             if not triggers:
                 continue
+
             if 'any' in triggers or activity in triggers:
                 bound = getattr(self, name)  # bind the function to this instance
                 try:
