@@ -4,59 +4,39 @@ build-backend = "hatchling.build"
 
 [project]
 name = "webhooky"
-version = "0.2.0"
-description = "Validation-based webhook event processing with explicit bus architecture"
+version = "0.3.0"
+description = "Simple Pydantic-based webhook event processing"
 requires-python = ">=3.11"
 authors = [{name = "Bullish Design"}]
 license = {text = "MIT"}
 dependencies = [
     "pydantic>=2.7",
-    "typing-extensions>=4.10",
 ]
 
-keywords = ["webhooks", "events", "validation", "pydantic", "async", "bus"]
+keywords = ["webhooks", "events", "validation", "pydantic", "async"]
 
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only", 
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
-    "Intended Audience :: Developers",
-    "Topic :: Internet :: WWW/HTTP",
-    "Topic :: Software Development :: Libraries :: Python Modules",
     "Development Status :: 4 - Beta",
 ]
 
 [project.optional-dependencies]
 fastapi = ["fastapi>=0.111", "uvicorn>=0.30"]
-rich = ["rich>=13.0"]
-cli = ["typer>=0.12", "rich>=13.0"]
-all = ["webhooky[fastapi,rich,cli]"]
-
+cli = ["typer", "rich"]
+all = ["webhooky[fastapi,cli]"]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.23",
     "mypy>=1.10",
     "ruff>=0.6",
-    "coverage>=7.0",
 ]
-
-[tool.uv.sources]
-#smeeme = { git = "https://github.com/Bullish-Design/smeeme.git" }
-
-
 
 [project.urls]
 Homepage = "https://github.com/Bullish-Design/webhooky"
 Repository = "https://github.com/Bullish-Design/webhooky"
-Issues = "https://github.com/Bullish-Design/webhooky/issues"
-Documentation = "https://github.com/Bullish-Design/webhooky"
-
-[project.entry-points."webhooky.plugins"]
-# Core ships no plugins; external packages register here
-# Example for documentation:
-# github = "webhooky_github.plugin:get_plugin_info"
 
 [project.scripts]
 webhooky = "webhooky.cli:main"
@@ -64,40 +44,14 @@ webhooky = "webhooky.cli:main"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-lint.select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM"]
-lint.ignore = ["E501", "W293", "B008"]
+lint.select = ["E", "F", "I", "W", "UP", "B"]
+lint.ignore = ["E501", "W293"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
 warn_unused_ignores = true
-warn_redundant_casts = true
-warn_unreachable = true
-exclude = ["tests/", "examples/"]
 
 [tool.pytest.ini_options]
-minversion = "8.0"
 testpaths = ["tests"]
-addopts = "-v --tb=short"
 asyncio_mode = "auto"
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
-]
-
-[tool.coverage.run]
-source = ["src/webhooky"]
-omit = [
-    "*/tests/*",
-    "*/examples/*",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-]

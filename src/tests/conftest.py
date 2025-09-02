@@ -1,41 +1,70 @@
-import pytest
-import pytest_asyncio
-import asyncio
+"""Pytest configuration and fixtures for webhooky tests."""
+from __future__ import annotations
+
+import sys
 from pathlib import Path
-import json
-from typing import Dict, Any, List
 
-from webhooky.bus import EventBus
-from webhooky.plugins import plugin_manager
-from webhooky.registry import event_registry
+import pytest
+from typing import Dict, Any
 
-@pytest.fixture(scope="function", autouse=True)
-def reset_singletons():
-    """Ensure singletons are reset for each test function."""
-    # This is crucial to prevent state leakage between tests
-    plugin_manager.__init__()
-    event_registry.__init__()
-    yield
+# Add src to path so we can import webhooky
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-@pytest_asyncio.fixture
-async def test_bus() -> EventBus:
-    """Provides a default EventBus instance for testing."""
-    return EventBus(swallow_exceptions=False, enable_metrics=True, timeout_seconds=1.0)
+from webhooky import EventBus, WebhookEventBase
+
 
 @pytest.fixture
-def sample_payload() -> Dict[str, Any]:
-    """Provides a generic webhook payload."""
-    return {"event": "test", "user": "tester", "data": {"id": 123, "value": "abc"}}
+def bus():
+    """Create a clean EventBus for testing."""
+    return EventBus(timeout_seconds=5.0, fallback_to_generic=True)
+
 
 @pytest.fixture
-def create_plugin_file(tmp_path: Path):
-    """A factory fixture to create temporary plugin files."""
-    plugins_dir = tmp_path / "plugins"
-    plugins_dir.mkdir()
+def sample_webhook_data():
+    """Basic webhook test data."""
+    return {
+        "action": "test",
+        "event_type": "webhook_test",
+        "data": {"test_field": "test_value"},
+        "timestamp": "2025-01-01T00:00:00Z"
+    }
 
-    def _create(filename: str, content: str):
-        plugin_file = plugins_dir / filename
-        plugin_file.write_text(content)
-        return plugin_file
 
-    return _create, plugins_dir
+@pytest.fixture
+def memo_simple():
+    """Simple memo data for testing."""
+    return {
+        'name': 'memos/test123',
+        'creator': 'users/1',
+        'content': '#test Simple test memo',
+        'tags': ['test'],
+        'create_time': {'seconds': 1756837499},
+        'update_time': {'seconds': 1756837499},
+        'visibility': 1,
+        'property': {}
+    }
+
+
+@pytest.fixture
+def memo_with_tasks():
+    """Memo with tasks for testing."""
+    return {
+        'name': 'memos/task456',
+        'creator': 'users/1',
+        'content': '# Todo List\n- [ ] Task 1\n- [x] Task 2',
+        'tags': ['todo'],
+        'create_time': {'seconds': 1756837500},
+        'update_time': {'seconds': 1756837500},
+        'visibility': 1,
+        'property': {'has_task_list': True, 'has_incomplete_tasks': True}
+    }
+
+
+@pytest.fixture
+def webhook_headers():
+    """Common webhook headers."""
+    return {
+        'content-type': 'application/json',
+        'user-agent': 'TestWebhook/1.0',
+        'x-webhook-source': 'test'
+    }
